@@ -3,6 +3,8 @@
 #include<math.h>
 #include <stdio.h>
 #include <stdlib.h>
+size_t detect_llc_size();
+size_t detect_cache_cpuinfo();
 
 size_t detect_llc_size(){
 	size_t size;
