@@ -46,6 +46,8 @@
 # include <float.h>
 # include <limits.h>
 # include <sys/time.h>
+#include <stdlib.h>
+#include<math.h>
 
 /*-----------------------------------------------------------------------
  * INSTRUCTIONS:
@@ -90,9 +92,7 @@
  *          will override the default size of 10M with a new size of 100M elements
  *          per array.
  */
-#ifndef STREAM_ARRAY_SIZE
-#   define STREAM_ARRAY_SIZE	10000000
-#endif
+size_t STREAM_ARRAY_SIZE;
 
 /*  2) STREAM runs each kernel "NTIMES" times and reports the *best* result
  *         for any iteration after the first, therefore the minimum value
@@ -175,23 +175,23 @@
 #ifndef STREAM_TYPE
 #define STREAM_TYPE double
 #endif
+static STREAM_TYPE  *a, *b,*c;
+static double   avgtime[4] = {0}, maxtime[4] = {0}, mintime[4] = {FLT_MAX,FLT_MAX,FLT_MAX,FLT_MAX};
+static char     *label[4] = {"Copy:      ", "Scale:     ", "Add:       ", "Triad:     "};
+static double   bytes[4];
+static void init_array(size_t size){
+	a=malloc((size+OFFSET)* sizeof(STREAM_TYPE));
+	b=malloc((size+OFFSET)* sizeof(STREAM_TYPE));
+	c=malloc((size+OFFSET)* sizeof(STREAM_TYPE));
+	bytes[0]= 2 * sizeof(STREAM_TYPE) * size;
+    	bytes[1]=2 * sizeof(STREAM_TYPE) * size;
+    	bytes[2]=3 * sizeof(STREAM_TYPE) * size;
+    	bytes[3]=3 * sizeof(STREAM_TYPE) * size;
+    	
+}
 
-static STREAM_TYPE	a[STREAM_ARRAY_SIZE+OFFSET],
-			b[STREAM_ARRAY_SIZE+OFFSET],
-			c[STREAM_ARRAY_SIZE+OFFSET];
-
-static double	avgtime[4] = {0}, maxtime[4] = {0},
-		mintime[4] = {FLT_MAX,FLT_MAX,FLT_MAX,FLT_MAX};
-
-static char	*label[4] = {"Copy:      ", "Scale:     ",
-    "Add:       ", "Triad:     "};
-
-static double	bytes[4] = {
-    2 * sizeof(STREAM_TYPE) * STREAM_ARRAY_SIZE,
-    2 * sizeof(STREAM_TYPE) * STREAM_ARRAY_SIZE,
-    3 * sizeof(STREAM_TYPE) * STREAM_ARRAY_SIZE,
-    3 * sizeof(STREAM_TYPE) * STREAM_ARRAY_SIZE
-    };
+extern size_t detect_llc_size();
+extern size_t detect_cache_cpuinfo();
 
 extern double mysecond();
 extern void checkSTREAMresults();
@@ -213,7 +213,10 @@ main()
     ssize_t		j;
     STREAM_TYPE		scalar;
     double		t, times[4][NTIMES];
-
+    STREAM_ARRAY_SIZE=detect_llc_size();
+    STREAM_ARRAY_SIZE*=8;
+    STREAM_ARRAY_SIZE=STREAM_ARRAY_SIZE/sizeof(STREAM_TYPE);
+    init_array(STREAM_ARRAY_SIZE);
     /* --- SETUP --- determine precision and check timing --- */
 
     printf(HLINE);
@@ -416,7 +419,7 @@ checktick()
    clock timer on most UNIX-like systems.  */
 
 #include <sys/time.h>
-
+/*
 double mysecond()
 {
         struct timeval tp;
@@ -426,7 +429,7 @@ double mysecond()
         i = gettimeofday(&tp,&tzp);
         return ( (double) tp.tv_sec + (double) tp.tv_usec * 1.e-6 );
 }
-
+*/
 #ifndef abs
 #define abs(a) ((a) >= 0 ? (a) : -(a))
 #endif
