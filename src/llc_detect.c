@@ -10,6 +10,7 @@
 
 size_t detect_llc_size();
 size_t detect_cache_cpuinfo();
+size_t detect_cache_cpuid();
 
 size_t detect_llc_size(){
 	size_t size;
@@ -32,14 +33,14 @@ size_t detect_llc_size(){
 }
 
 size_t detect_cache_cpuinfo(){
+	size_t size;
 	FILE*f=fopen("/proc/cpuinfo","r");
   	if(!f){
-        	printf("LLC detection failed. Using default 32MB\n");
-        	return 32*1024*1024;
+        	printf("LLC detection failed. Using cpuid\n");
+        	size=detect_cache_cpuid();
     	}
 
     	char line[256];
-    	size_t size;
 	while(fgets(line,sizeof(line),f)){
         	if(strstr(line,"cache size")) {
             	char unit[2];
@@ -57,6 +58,30 @@ size_t detect_cache_cpuinfo(){
 	return size;
 	
 }
+
+size_t detect_cache_cpuid(){
+	size_t size;
+	unsigned int eax,ebx,ecx,edx;
+	
+	for(int i=0;;i++){
+		__cpuid_count(4,i,eax,ebx,ecx,edx);
+		int cache_type=eax&0x1f;
+		if(cache_type==0) break;
+		int level=(eax >> 5) & 0x7;
+		if(level==3){
+			int ways=((ebx >> 22) & 0x3FF) + 1;
+			int partitions=((ebx >> 12) & 0x3FF) + 1;
+			int line_size = (ebx & 0xFFF) + 1;
+			int sets= ecx + 1;
+
+            		size=(size_t)ways*partitions*line_size*sets;
+		}
+	}
+	printf("-------------------------------------------------------------\n");
+        printf("Used cpuid to determine the cache size: %zu bytes\n",size);
+        printf("-------------------------------------------------------------\n");
+	return size;
+}
 void usage(const char *argv0) {
       fprintf(stderr,
           "Usage: %s [--array-size=N] [--mem-bound=N] [--iters=N]\n"
@@ -65,4 +90,4 @@ void usage(const char *argv0) {
           "  %s--llc-scale=n \n",
           argv0, argv0, argv0);
       exit(EXIT_FAILURE);
-  }
+}
