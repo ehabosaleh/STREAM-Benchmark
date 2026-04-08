@@ -20,6 +20,9 @@ size_t detect_llc_size(){
     	else if(unit=='M')
         	size=size*1024*1024;
 	fclose(f);
+	printf("-------------------------------------------------------------\n");
+	printf("Used /sys/devices/system/cpu/cpu0/cache/ to determine the cache size: %zu bytes\n",size);
+	printf("-------------------------------------------------------------\n");
 	return size;
 }
 
@@ -43,6 +46,9 @@ size_t detect_cache_cpuinfo(){
     		}
 	}
 	fclose(f);
+	printf("-------------------------------------------------------------\n");
+	printf("Used cpuinfo to determine the cache size: %zu bytes\n",size);
+	printf("-------------------------------------------------------------\n");
 	return size;
 	
 }
